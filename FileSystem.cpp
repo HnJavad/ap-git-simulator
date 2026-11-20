@@ -1,5 +1,6 @@
 #include "FileSystem.h"
 #include <iostream>
+#include <algorithm>
 
 // File methods
 
@@ -24,5 +25,118 @@ void File::set_lines(const std::vector<std::string>& new_lines) {
 void File::print_content() const {
     for (size_t i = 0; i < lines.size(); ++i) {
         std::cout << lines[i] << '\n';
+    }
+}
+
+// Folder methods
+
+Folder::Folder(const std::string& n, Folder* p) : name(n), parent(p) {}
+
+Folder::~Folder() {
+    for (size_t i = 0; i < subfolders.size(); ++i) {
+        delete subfolders[i];
+    }
+    subfolders.clear();
+}
+
+bool Folder::has_file(const std::string& fname) const {
+    return find_file_const(fname) != nullptr;
+}
+
+bool Folder::has_subfolder(const std::string& dname) const {
+    return find_subfolder_const(dname) != nullptr;
+}
+
+File* Folder::find_file(const std::string& fname) {
+    for (size_t i = 0; i < files.size(); ++i) {
+        if (files[i].get_name() == fname)
+            return &files[i];
+    }
+    return nullptr;
+}
+
+const File* Folder::find_file_const(const std::string& fname) const {
+    for (size_t i = 0; i < files.size(); ++i) {
+        if (files[i].get_name() == fname)
+            return &files[i];
+    }
+    return nullptr;
+}
+
+Folder* Folder::find_subfolder(const std::string& dname) {
+    for (size_t i = 0; i < subfolders.size(); ++i) {
+        if (subfolders[i]->get_name() == dname)
+            return subfolders[i];
+    }
+    return nullptr;
+}
+
+const Folder* Folder::find_subfolder_const(const std::string& dname) const {
+    for (size_t i = 0; i < subfolders.size(); ++i) {
+        if (subfolders[i]->get_name() == dname)
+            return subfolders[i];
+    }
+    return nullptr;
+}
+
+void Folder::add_file(const File& f) {
+    files.push_back(f);
+}
+
+Folder* Folder::add_subfolder(const std::string& dname) {
+    if (!is_valid_identifier(dname))
+        throw GitException("Invalid directory name: " + dname);
+    if (has_subfolder(dname) || has_file(dname))
+        throw GitException("mkdir: cannot create directory '" + dname + "': File or directory exists");
+    Folder* child = new Folder(dname, this);
+    subfolders.push_back(child);
+    return child;
+}
+
+void Folder::collect_sorted_names(std::vector<std::string>& out_names) const {
+    out_names.clear();
+    for (size_t i = 0; i < files.size(); ++i)
+        out_names.push_back(files[i].get_name());
+    for (size_t i = 0; i < subfolders.size(); ++i)
+        out_names.push_back(subfolders[i]->get_name());
+    std::sort(out_names.begin(), out_names.end());
+}
+
+// FileSystem methods
+
+FileSystem::FileSystem() {
+    root = new Folder("", nullptr);
+    current_dir = root;
+}
+
+FileSystem::~FileSystem() {
+    delete root;
+}
+
+std::string FileSystem::pwd() const {
+    if (current_dir == root)
+        return "/";
+    std::vector<std::string> parts;
+    const Folder* curr = current_dir;
+    while (curr != nullptr && curr != root) {
+        parts.push_back(curr->get_name());
+        curr = curr->get_parent();
+    }
+    std::string full_path = "";
+    for (int i = static_cast<int>(parts.size()) - 1; i >= 0; --i) {
+        full_path += "/" + parts[i];
+    }
+    return full_path;
+}
+
+void FileSystem::mkdir(const std::string& dir_name) {
+    current_dir->add_subfolder(dir_name);
+}
+
+void FileSystem::ls() const {
+    std::vector<std::string> names;
+    current_dir->collect_sorted_names(names);
+    for (size_t i = 0; i < names.size(); ++i) {
+        std::cout << names[i] << '\n';
     }
 }
