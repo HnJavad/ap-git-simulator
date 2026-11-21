@@ -55,6 +55,14 @@ void process_command(const std::string& line, FileSystem& fs, bool& running) {
         fs.mkdir(arg);
         return;
     }
+    
+    if (cmd == "cd") {
+        std::string arg, extra;
+        if (!(ss >> arg) || (ss >> extra))
+            throw GitException("cd: invalid arguments");
+        fs.cd(arg);
+        return;
+    }
 
         if (cmd == "touch") {
         std::string arg, extra;

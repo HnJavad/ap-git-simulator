@@ -58,6 +58,7 @@ public:
 
     std::string pwd() const;
     void mkdir(const std::string& dir_name);
+    void cd(const std::string& address);
     void ls() const;
     void touch(const std::string& file_name);
     void echo_overwrite(const std::string& text, const std::string& file_name);

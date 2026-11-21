@@ -143,6 +143,20 @@ void FileSystem::mkdir(const std::string& dir_name) {
     current_dir->add_subfolder(dir_name);
 }
 
+void FileSystem::cd(const std::string& address) {
+    if (address == "/") {
+        current_dir = root;
+    } else if (address == "..") {
+        if (current_dir->get_parent() != nullptr)
+            current_dir = current_dir->get_parent();
+    } else {
+        Folder* next = current_dir->find_subfolder(address);
+        if (next == nullptr)
+            throw GitException("cd: " + address + ": No such directory");
+        current_dir = next;
+    }
+}
+
 void FileSystem::ls() const {
     std::vector<std::string> names;
     current_dir->collect_sorted_names(names);
