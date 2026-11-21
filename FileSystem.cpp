@@ -1,6 +1,7 @@
 #include "FileSystem.h"
 #include <iostream>
 #include <algorithm>
+#include <sstream>
 
 // File methods
 
@@ -144,17 +145,27 @@ void FileSystem::mkdir(const std::string& dir_name) {
 }
 
 void FileSystem::cd(const std::string& address) {
-    if (address == "/") {
-        current_dir = root;
-    } else if (address == "..") {
-        if (current_dir->get_parent() != nullptr)
-            current_dir = current_dir->get_parent();
-    } else {
-        Folder* next = current_dir->find_subfolder(address);
-        if (next == nullptr)
-            throw GitException("cd: " + address + ": No such directory");
-        current_dir = next;
+    if (address.empty())
+        throw GitException("cd: invalid path");
+
+    Folder* target = (address[0] == '/') ? root : current_dir;
+    std::stringstream ss(address);
+    std::string token;
+
+    while (std::getline(ss, token, '/')) {
+        if (token.empty() || token == ".") {
+            continue;
+        } else if (token == "..") {
+            if (target->get_parent() != nullptr)
+                target = target->get_parent();
+        } else {
+            Folder* next = target->find_subfolder(token);
+            if (next == nullptr)
+                throw GitException("cd: " + address + ": No such directory");
+            target = next;
+        }
     }
+    current_dir = target;
 }
 
 void FileSystem::ls() const {
