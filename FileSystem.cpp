@@ -159,6 +159,34 @@ void FileSystem::touch(const std::string& file_name) {
     }
 }
 
+void FileSystem::echo_overwrite(const std::string& text, const std::string& file_name) {
+    if (!is_valid_identifier(file_name))
+        throw GitException("Invalid file name: " + file_name);
+
+    File* f = current_dir->find_file(file_name);
+    if (f == nullptr) {
+        File new_file(file_name);
+        new_file.write_overwrite(text);
+        current_dir->add_file(new_file);
+    } else {
+        f->write_overwrite(text);
+    }
+}
+
+void FileSystem::echo_append(const std::string& text, const std::string& file_name) {
+    if (!is_valid_identifier(file_name))
+        throw GitException("Invalid file name: " + file_name);
+
+    File* f = current_dir->find_file(file_name);
+    if (f == nullptr) {
+        File new_file(file_name);
+        new_file.write_append(text);
+        current_dir->add_file(new_file);
+    } else {
+        f->write_append(text);
+    }
+}
+
 void FileSystem::cat(const std::string& file_name) const {
     const File* f = current_dir->find_file_const(file_name);
     if (f == nullptr)

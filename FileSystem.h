@@ -60,6 +60,8 @@ public:
     void mkdir(const std::string& dir_name);
     void ls() const;
     void touch(const std::string& file_name);
+    void echo_overwrite(const std::string& text, const std::string& file_name);
+    void echo_append(const std::string& text, const std::string& file_name);
     void cat(const std::string& file_name) const;
     void rm(const std::string& file_name);
 

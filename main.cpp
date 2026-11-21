@@ -80,6 +80,39 @@ void process_command(const std::string& line, FileSystem& fs, bool& running) {
         return;
     }
 
+    if (cmd == "echo") {
+        size_t first_quote = trimmed.find('"');
+        size_t last_quote = trimmed.rfind('"');
+        if (first_quote == std::string::npos || last_quote == first_quote)
+            throw GitException("echo: text must be enclosed in double quotes");
+
+        std::string text = trimmed.substr(first_quote + 1, last_quote - first_quote - 1);
+        std::string after = trim_spaces(trimmed.substr(last_quote + 1));
+
+        bool is_append = false;
+        std::string file_part;
+        if (after.size() >= 2 && after[0] == '>' && after[1] == '>') {
+            is_append = true;
+            file_part = trim_spaces(after.substr(2));
+        } else if (!after.empty() && after[0] == '>') {
+            is_append = false;
+            file_part = trim_spaces(after.substr(1));
+        } else {
+            throw GitException("echo: expected '>' or '>>' redirection");
+        }
+
+        std::stringstream fss(file_part);
+        std::string file_name, extra;
+        if (!(fss >> file_name) || (fss >> extra))
+            throw GitException("echo: invalid target file name");
+
+        if (is_append)
+            fs.echo_append(text, file_name);
+        else
+            fs.echo_overwrite(text, file_name);
+        return;
+    }
+
     throw GitException("Unknown command: " + cmd);
 }
 
