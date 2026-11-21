@@ -39,6 +39,7 @@ public:
     const Folder* find_subfolder_const(const std::string& dname) const;
 
     void add_file(const File& f);
+    void remove_file(const std::string& fname);
     Folder* add_subfolder(const std::string& dname);
 
     void collect_sorted_names(std::vector<std::string>& out_names) const;
@@ -58,6 +59,9 @@ public:
     std::string pwd() const;
     void mkdir(const std::string& dir_name);
     void ls() const;
+    void touch(const std::string& file_name);
+    void cat(const std::string& file_name) const;
+    void rm(const std::string& file_name);
 
 private:
     Folder* root;

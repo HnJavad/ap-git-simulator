@@ -83,6 +83,16 @@ void Folder::add_file(const File& f) {
     files.push_back(f);
 }
 
+void Folder::remove_file(const std::string& fname) {
+    for (size_t i = 0; i < files.size(); ++i) {
+        if (files[i].get_name() == fname) {
+            files.erase(files.begin() + i);
+            return;
+        }
+    }
+    throw GitException("rm: cannot remove '" + fname + "': No such file");
+}
+
 Folder* Folder::add_subfolder(const std::string& dname) {
     if (!is_valid_identifier(dname))
         throw GitException("Invalid directory name: " + dname);
@@ -139,4 +149,23 @@ void FileSystem::ls() const {
     for (size_t i = 0; i < names.size(); ++i) {
         std::cout << names[i] << '\n';
     }
+}
+
+void FileSystem::touch(const std::string& file_name) {
+    if (!is_valid_identifier(file_name))
+        throw GitException("Invalid file name: " + file_name);
+    if (!current_dir->has_file(file_name)) {
+        current_dir->add_file(File(file_name));
+    }
+}
+
+void FileSystem::cat(const std::string& file_name) const {
+    const File* f = current_dir->find_file_const(file_name);
+    if (f == nullptr)
+        throw GitException("cat: " + file_name + ": No such file");
+    f->print_content();
+}
+
+void FileSystem::rm(const std::string& file_name) {
+    current_dir->remove_file(file_name);
 }

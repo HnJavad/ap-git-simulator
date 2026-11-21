@@ -56,6 +56,30 @@ void process_command(const std::string& line, FileSystem& fs, bool& running) {
         return;
     }
 
+        if (cmd == "touch") {
+        std::string arg, extra;
+        if (!(ss >> arg) || (ss >> extra))
+            throw GitException("touch: invalid arguments");
+        fs.touch(arg);
+        return;
+    }
+
+    if (cmd == "cat") {
+        std::string arg, extra;
+        if (!(ss >> arg) || (ss >> extra))
+            throw GitException("cat: invalid arguments");
+        fs.cat(arg);
+        return;
+    }
+
+    if (cmd == "rm") {
+        std::string arg, extra;
+        if (!(ss >> arg) || (ss >> extra))
+            throw GitException("rm: invalid arguments");
+        fs.rm(arg);
+        return;
+    }
+
     throw GitException("Unknown command: " + cmd);
 }
 
