@@ -179,6 +179,8 @@ void FileSystem::ls() const {
 void FileSystem::touch(const std::string& file_name) {
     if (!is_valid_identifier(file_name))
         throw GitException("Invalid file name: " + file_name);
+    if (current_dir->has_subfolder(file_name))
+        throw GitException("touch: '" + file_name + "' is a directory");
     if (!current_dir->has_file(file_name)) {
         current_dir->add_file(File(file_name));
     }
@@ -187,6 +189,8 @@ void FileSystem::touch(const std::string& file_name) {
 void FileSystem::echo_overwrite(const std::string& text, const std::string& file_name) {
     if (!is_valid_identifier(file_name))
         throw GitException("Invalid file name: " + file_name);
+    if (current_dir->has_subfolder(file_name))
+        throw GitException("echo: '" + file_name + "' is a directory");
 
     File* f = current_dir->find_file(file_name);
     if (f == nullptr) {
@@ -201,6 +205,8 @@ void FileSystem::echo_overwrite(const std::string& text, const std::string& file
 void FileSystem::echo_append(const std::string& text, const std::string& file_name) {
     if (!is_valid_identifier(file_name))
         throw GitException("Invalid file name: " + file_name);
+    if (current_dir->has_subfolder(file_name))
+        throw GitException("echo: '" + file_name + "' is a directory");
 
     File* f = current_dir->find_file(file_name);
     if (f == nullptr) {
@@ -213,6 +219,8 @@ void FileSystem::echo_append(const std::string& text, const std::string& file_na
 }
 
 void FileSystem::cat(const std::string& file_name) const {
+    if (!is_valid_identifier(file_name))
+        throw GitException("cat: " + file_name + ": No such file");
     const File* f = current_dir->find_file_const(file_name);
     if (f == nullptr)
         throw GitException("cat: " + file_name + ": No such file");
@@ -220,5 +228,9 @@ void FileSystem::cat(const std::string& file_name) const {
 }
 
 void FileSystem::rm(const std::string& file_name) {
+    if (!is_valid_identifier(file_name))
+        throw GitException("rm: cannot remove '" + file_name + "': No such file");
+    if (current_dir->has_subfolder(file_name))
+        throw GitException("rm: cannot remove '" + file_name + "': Is a directory");
     current_dir->remove_file(file_name);
 }
