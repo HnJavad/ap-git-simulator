@@ -44,6 +44,9 @@ public:
 
     void collect_sorted_names(std::vector<std::string>& out_names) const;
 
+    void collect_files_recursive(const std::string& prefix,
+                                 std::vector<FileEntry>& out_files) const;
+
 private:
     std::string name;
     Folder* parent;
@@ -69,6 +72,11 @@ public:
     void cat(const std::string& file_name) const;
     void rm(const std::string& file_name);
     bool is_ancestor_or_same(const Folder* anc, const Folder* desc) const;
+    std::string get_relative_path(const Folder* base,
+                                  const Folder* target,
+                                  const std::string& file_name = "") const;
+    std::vector<FileEntry> get_all_files_under(const Folder* base) const;
+    const File* get_file_in_current(const std::string& file_name) const;
 
 private:
     Folder* root;

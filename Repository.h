@@ -72,6 +72,7 @@ public:
     ~Repository();
 
     Folder* get_repo_root() const { return repo_root; }
+    void add(FileSystem& fs, const std::string& target);
 
 private:
     Folder* repo_root;
@@ -82,6 +83,12 @@ private:
     bool is_detached;
     int detached_commit_id;
     std::vector<FileEntry> staging;
+    
+    int get_head_commit_id() const;
+    const Commit* find_commit(int id) const;
+    std::vector<FileEntry> get_head_snapshot() const;
+    int find_branch_index(const std::string& name) const;
+    int find_entry_index(const std::vector<FileEntry>& list, const std::string& path) const;
 };
 
 class RepoManager {
