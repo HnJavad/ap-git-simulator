@@ -79,8 +79,10 @@ RepoManager::~RepoManager() {
 void RepoManager::init(FileSystem& fs) {
     Folder* curr = fs.get_current_dir();
     for (size_t i = 0; i < repos.size(); ++i) {
-        if (repos[i]->get_repo_root() == curr) {
-            throw GitException("fatal: repository already initialized");
+        Folder* existing_root = repos[i]->get_repo_root();
+        if (fs.is_ancestor_or_same(existing_root, curr) ||
+            fs.is_ancestor_or_same(curr, existing_root)) {
+            throw GitException("fatal: cannot initialize nested git repository");
         }
     }
     repos.push_back(new Repository(curr));
