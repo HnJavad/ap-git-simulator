@@ -234,3 +234,13 @@ void FileSystem::rm(const std::string& file_name) {
         throw GitException("rm: cannot remove '" + file_name + "': Is a directory");
     current_dir->remove_file(file_name);
 }
+
+bool FileSystem::is_ancestor_or_same(const Folder* anc, const Folder* desc) const {
+    const Folder* curr = desc;
+    while (curr != nullptr) {
+        if (curr == anc)
+            return true;
+        curr = curr->get_parent();
+    }
+    return false;
+}

@@ -66,4 +66,35 @@ private:
     int commit_id;
 };
 
+class Repository {
+public:
+    Repository(Folder* root_dir);
+    ~Repository();
+
+    Folder* get_repo_root() const { return repo_root; }
+
+private:
+    Folder* repo_root;
+    int next_commit_id;
+    std::vector<Commit*> commits;
+    std::vector<Branch> branches;
+    std::string current_branch;
+    bool is_detached;
+    int detached_commit_id;
+    std::vector<FileEntry> staging;
+};
+
+class RepoManager {
+public:
+    RepoManager();
+    ~RepoManager();
+
+    void init(FileSystem& fs);
+    Repository* get_active_repo(const FileSystem& fs);
+    const Repository* get_active_repo(const FileSystem& fs) const;
+
+private:
+    std::vector<Repository*> repos;
+};
+
 #endif

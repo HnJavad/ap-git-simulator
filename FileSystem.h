@@ -56,6 +56,9 @@ public:
     FileSystem();
     ~FileSystem();
 
+    Folder* get_root() const { return root; }
+    Folder* get_current_dir() const { return current_dir; }
+
     std::string pwd() const;
     void mkdir(const std::string& dir_name);
     void cd(const std::string& address);
@@ -65,6 +68,7 @@ public:
     void echo_append(const std::string& text, const std::string& file_name);
     void cat(const std::string& file_name) const;
     void rm(const std::string& file_name);
+    bool is_ancestor_or_same(const Folder* anc, const Folder* desc) const;
 
 private:
     Folder* root;

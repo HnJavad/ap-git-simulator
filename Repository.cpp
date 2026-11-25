@@ -46,3 +46,60 @@ Commit::Commit(int cid,
     timestamp = std::string(buf);
     std::sort(snapshot.begin(), snapshot.end());
 }
+
+// --- Repository ---
+
+Repository::Repository(Folder* root_dir)
+    : repo_root(root_dir),
+      next_commit_id(1),
+      current_branch("main"),
+      is_detached(false),
+      detached_commit_id(-1) {
+    branches.push_back(Branch("main", -1));
+}
+
+Repository::~Repository() {
+    for (size_t i = 0; i < commits.size(); ++i) {
+        delete commits[i];
+    }
+    commits.clear();
+}
+
+// --- RepoManager ---
+
+RepoManager::RepoManager() {}
+
+RepoManager::~RepoManager() {
+    for (size_t i = 0; i < repos.size(); ++i) {
+        delete repos[i];
+    }
+    repos.clear();
+}
+
+void RepoManager::init(FileSystem& fs) {
+    Folder* curr = fs.get_current_dir();
+    for (size_t i = 0; i < repos.size(); ++i) {
+        if (repos[i]->get_repo_root() == curr) {
+            throw GitException("fatal: repository already initialized");
+        }
+    }
+    repos.push_back(new Repository(curr));
+}
+
+Repository* RepoManager::get_active_repo(const FileSystem& fs) {
+    Folder* curr = fs.get_current_dir();
+    for (size_t i = 0; i < repos.size(); ++i) {
+        if (fs.is_ancestor_or_same(repos[i]->get_repo_root(), curr))
+            return repos[i];
+    }
+    throw GitException("fatal: not a git repository");
+}
+
+const Repository* RepoManager::get_active_repo(const FileSystem& fs) const {
+    Folder* curr = fs.get_current_dir();
+    for (size_t i = 0; i < repos.size(); ++i) {
+        if (fs.is_ancestor_or_same(repos[i]->get_repo_root(), curr))
+            return repos[i];
+    }
+    throw GitException("fatal: not a git repository");
+}
