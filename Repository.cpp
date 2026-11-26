@@ -1,6 +1,7 @@
 #include "Repository.h"
 #include <algorithm>
 #include <ctime>
+#include <iostream>
 
 // --- UserConfig ---
 
@@ -196,6 +197,63 @@ void Repository::reset(FileSystem& fs, const std::string& file_name) {
         }
     }
 }
+
+void Repository::commit(const FileSystem& fs, const std::string& message) {
+    if (is_detached)
+        throw GitException("fatal: cannot commit in detached HEAD state");
+
+    UserConfig* cfg = UserConfig::get_instance();
+    if (!cfg->is_configured())
+        throw GitException("fatal: author identity unknown (configure user.name and user.email)");
+
+    if (message.empty())
+        throw GitException("fatal: commit message cannot be empty");
+
+    std::sort(staging.begin(), staging.end());
+    std::vector<FileEntry> head_snap = get_head_snapshot();
+    std::vector<FileEntry> ws_files = fs.get_all_files_under(repo_root);
+
+    if (staging == head_snap) {
+        bool has_mod_or_untracked = false;
+        for (size_t i = 0; i < staging.size(); ++i) {
+            int w_idx = find_entry_index(ws_files, staging[i].get_path());
+            if (w_idx == -1 || ws_files[w_idx].get_lines() != staging[i].get_lines()) {
+                has_mod_or_untracked = true;
+                break;
+            }
+        }
+        if (!has_mod_or_untracked) {
+            for (size_t i = 0; i < ws_files.size(); ++i) {
+                if (find_entry_index(staging, ws_files[i].get_path()) == -1) {
+                    has_mod_or_untracked = true;
+                    break;
+                }
+            }
+        }
+
+        if (has_mod_or_untracked)
+            std::cout << "no changes added to commit\n";
+        else
+            std::cout << "nothing to commit, working tree clean\n";
+        return;
+    }
+
+    int parent_id = get_head_commit_id();
+    Commit* new_commit = new Commit(next_commit_id++,
+                                    parent_id,
+                                    message,
+                                    cfg->get_username(),
+                                    cfg->get_email(),
+                                    staging);
+    commits.push_back(new_commit);
+
+    int b_idx = find_branch_index(current_branch);
+    branches[b_idx].set_commit_id(new_commit->get_id());
+
+    std::cout << "[" << current_branch << " " << new_commit->get_id()
+              << "] " << message << '\n';
+}
+
 // --- RepoManager ---
 
 RepoManager::RepoManager() {}

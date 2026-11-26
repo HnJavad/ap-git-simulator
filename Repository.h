@@ -74,6 +74,7 @@ public:
     Folder* get_repo_root() const { return repo_root; }
     void add(FileSystem& fs, const std::string& target);
     void reset(FileSystem& fs, const std::string& file_name);
+    void commit(const FileSystem& fs, const std::string& message);
 
 private:
     Folder* repo_root;
