@@ -330,6 +330,28 @@ void Repository::status(const FileSystem& fs) const {
     }
 }
 
+void Repository::log() const {
+    int curr_id = get_head_commit_id();
+    if (curr_id == -1)
+        throw GitException("fatal: your current branch does not have any commits yet");
+
+    while (curr_id != -1) {
+        const Commit* c = find_commit(curr_id);
+        if (c == nullptr)
+            break;
+
+        std::cout << "commit " << c->get_id() << '\n';
+        std::cout << "Author: " << c->get_author_name()
+                  << " <" << c->get_author_email() << ">\n";
+        std::cout << "Date: " << c->get_timestamp() << "\n\n";
+        std::cout << c->get_message() << '\n';
+
+        curr_id = c->get_parent_id();
+        if (curr_id != -1)
+            std::cout << '\n';
+    }
+}
+
 // --- RepoManager ---
 
 RepoManager::RepoManager() {}
