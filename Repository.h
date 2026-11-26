@@ -89,6 +89,7 @@ private:
     std::vector<FileEntry> get_head_snapshot() const;
     int find_branch_index(const std::string& name) const;
     int find_entry_index(const std::vector<FileEntry>& list, const std::string& path) const;
+    bool is_path_under_prefix(const std::string& path, const std::string& prefix) const;
 };
 
 class RepoManager {

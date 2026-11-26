@@ -108,7 +108,43 @@ int Repository::find_entry_index(const std::vector<FileEntry>& list,
     return -1;
 }
 
+bool Repository::is_path_under_prefix(const std::string& path, const std::string& prefix) const {
+    return prefix.empty() ||
+           path == prefix ||
+           path.find(prefix + "/") == 0;
+}
+
 void Repository::add(FileSystem& fs, const std::string& target) {
+    if (target == ".") {
+        Folder* curr = fs.get_current_dir();
+        std::string dir_prefix = fs.get_relative_path(repo_root, curr);
+        std::vector<FileEntry> ws_files = fs.get_all_files_under(repo_root);
+
+        for (size_t i = 0; i < ws_files.size(); ++i) {
+            if (!is_path_under_prefix(ws_files[i].get_path(), dir_prefix))
+                continue;
+
+            int s_idx = find_entry_index(staging, ws_files[i].get_path());
+            if (s_idx == -1) {
+                staging.push_back(ws_files[i]);
+            } else {
+                staging[s_idx].set_lines(ws_files[i].get_lines());
+            }
+        }
+
+        for (int i = static_cast<int>(staging.size()) - 1; i >= 0; --i) {
+            if (!is_path_under_prefix(staging[i].get_path(), dir_prefix))
+                continue;
+
+            if (find_entry_index(ws_files, staging[i].get_path()) == -1) {
+                staging.erase(staging.begin() + i);
+            }
+        }
+
+        std::sort(staging.begin(), staging.end());
+        return;
+    }
+        
     if (!is_valid_identifier(target))
         throw GitException("fatal: pathspec '" + target + "' did not match any files");
 
