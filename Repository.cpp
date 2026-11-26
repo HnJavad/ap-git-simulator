@@ -144,7 +144,7 @@ void Repository::add(FileSystem& fs, const std::string& target) {
         std::sort(staging.begin(), staging.end());
         return;
     }
-        
+
     if (!is_valid_identifier(target))
         throw GitException("fatal: pathspec '" + target + "' did not match any files");
 
@@ -169,6 +169,33 @@ void Repository::add(FileSystem& fs, const std::string& target) {
     }
 }
 
+void Repository::reset(FileSystem& fs, const std::string& file_name) {
+    if (!is_valid_identifier(file_name))
+        throw GitException("fatal: pathspec '" + file_name + "' did not match any files");
+
+    std::string rel_path = fs.get_relative_path(repo_root, fs.get_current_dir(), file_name);
+    std::vector<FileEntry> head_snap = get_head_snapshot();
+
+    int c_idx = find_entry_index(head_snap, rel_path);
+    int s_idx = find_entry_index(staging, rel_path);
+    const File* ws_file = fs.get_file_in_current(file_name);
+
+    if (c_idx == -1 && s_idx == -1 && ws_file == nullptr)
+        throw GitException("fatal: pathspec '" + file_name + "' did not match any files");
+
+    if (c_idx != -1) {
+        if (s_idx != -1) {
+            staging[s_idx].set_lines(head_snap[c_idx].get_lines());
+        } else {
+            staging.push_back(head_snap[c_idx]);
+            std::sort(staging.begin(), staging.end());
+        }
+    } else {
+        if (s_idx != -1) {
+            staging.erase(staging.begin() + s_idx);
+        }
+    }
+}
 // --- RepoManager ---
 
 RepoManager::RepoManager() {}
