@@ -75,7 +75,8 @@ public:
     void add(FileSystem& fs, const std::string& target);
     void reset(FileSystem& fs, const std::string& file_name);
     void commit(const FileSystem& fs, const std::string& message);
-
+    void status(const FileSystem& fs) const;
+    
 private:
     Folder* repo_root;
     int next_commit_id;

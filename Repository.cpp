@@ -254,6 +254,82 @@ void Repository::commit(const FileSystem& fs, const std::string& message) {
               << "] " << message << '\n';
 }
 
+void Repository::status(const FileSystem& fs) const {
+    if (is_detached)
+        std::cout << "HEAD detached at " << detached_commit_id << '\n';
+    else
+        std::cout << "On branch " << current_branch << '\n';
+
+    std::vector<FileEntry> head_snap = get_head_snapshot();
+    std::vector<FileEntry> ws_files = fs.get_all_files_under(repo_root);
+    std::vector<FileEntry> sorted_staging = staging;
+    std::sort(sorted_staging.begin(), sorted_staging.end());
+
+    // 1. Staged changes
+    std::vector<std::string> staged_lines;
+    for (size_t i = 0; i < sorted_staging.size(); ++i) {
+        int h_idx = find_entry_index(head_snap, sorted_staging[i].get_path());
+        if (h_idx == -1) {
+            staged_lines.push_back("new file: " + sorted_staging[i].get_path());
+        } else if (head_snap[h_idx].get_lines() != sorted_staging[i].get_lines()) {
+            staged_lines.push_back("modified: " + sorted_staging[i].get_path());
+        }
+    }
+    for (size_t i = 0; i < head_snap.size(); ++i) {
+        if (find_entry_index(sorted_staging, head_snap[i].get_path()) == -1) {
+            staged_lines.push_back("deleted: " + head_snap[i].get_path());
+        }
+    }
+    for (size_t i = 0; i < staged_lines.size(); ++i) {
+        for (size_t j = i + 1; j < staged_lines.size(); ++j) {
+            std::string p1 = staged_lines[i].substr(staged_lines[i].find(": ") + 2);
+            std::string p2 = staged_lines[j].substr(staged_lines[j].find(": ") + 2);
+            if (p2 < p1)
+                std::swap(staged_lines[i], staged_lines[j]);
+        }
+    }
+
+    // 2. Modified (not staged)
+    std::vector<std::string> unstaged_lines;
+    for (size_t i = 0; i < sorted_staging.size(); ++i) {
+        int w_idx = find_entry_index(ws_files, sorted_staging[i].get_path());
+        if (w_idx == -1) {
+            unstaged_lines.push_back("deleted: " + sorted_staging[i].get_path());
+        } else if (ws_files[w_idx].get_lines() != sorted_staging[i].get_lines()) {
+            unstaged_lines.push_back("modified: " + sorted_staging[i].get_path());
+        }
+    }
+
+    // 3. Untracked files
+    std::vector<std::string> untracked_lines;
+    for (size_t i = 0; i < ws_files.size(); ++i) {
+        if (find_entry_index(sorted_staging, ws_files[i].get_path()) == -1) {
+            untracked_lines.push_back(ws_files[i].get_path());
+        }
+    }
+
+    if (staged_lines.empty() && unstaged_lines.empty() && untracked_lines.empty()) {
+        std::cout << "nothing to commit, working tree clean\n";
+        return;
+    }
+
+    if (!staged_lines.empty()) {
+        std::cout << "\nStaged changes:\n";
+        for (size_t i = 0; i < staged_lines.size(); ++i)
+            std::cout << "  " << staged_lines[i] << '\n';
+    }
+    if (!unstaged_lines.empty()) {
+        std::cout << "\nModified (not staged):\n";
+        for (size_t i = 0; i < unstaged_lines.size(); ++i)
+            std::cout << "  " << unstaged_lines[i] << '\n';
+    }
+    if (!untracked_lines.empty()) {
+        std::cout << "\nUntracked files:\n";
+        for (size_t i = 0; i < untracked_lines.size(); ++i)
+            std::cout << "  " << untracked_lines[i] << '\n';
+    }
+}
+
 // --- RepoManager ---
 
 RepoManager::RepoManager() {}
