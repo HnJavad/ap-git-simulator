@@ -113,6 +113,22 @@ void Folder::collect_sorted_names(std::vector<std::string>& out_names) const {
     std::sort(out_names.begin(), out_names.end());
 }
 
+void Folder::collect_files_recursive(const std::string& prefix,
+                                     std::vector<FileEntry>& out_files) const {
+    for (size_t i = 0; i < files.size(); ++i) {
+        std::string full_rel = prefix.empty()
+                                   ? files[i].get_name()
+                                   : prefix + "/" + files[i].get_name();
+        out_files.push_back(FileEntry(full_rel, files[i].get_lines()));
+    }
+    for (size_t i = 0; i < subfolders.size(); ++i) {
+        std::string next_prefix = prefix.empty()
+                                      ? subfolders[i]->get_name()
+                                      : prefix + "/" + subfolders[i]->get_name();
+        subfolders[i]->collect_files_recursive(next_prefix, out_files);
+    }
+}
+
 // FileSystem methods
 
 FileSystem::FileSystem() {
@@ -233,4 +249,48 @@ void FileSystem::rm(const std::string& file_name) {
     if (current_dir->has_subfolder(file_name))
         throw GitException("rm: cannot remove '" + file_name + "': Is a directory");
     current_dir->remove_file(file_name);
+}
+
+bool FileSystem::is_ancestor_or_same(const Folder* anc, const Folder* desc) const {
+    const Folder* curr = desc;
+    while (curr != nullptr) {
+        if (curr == anc)
+            return true;
+        curr = curr->get_parent();
+    }
+    return false;
+}
+
+std::string FileSystem::get_relative_path(const Folder* base,
+                                          const Folder* target,
+                                          const std::string& file_name) const {
+    std::vector<std::string> parts;
+    const Folder* curr = target;
+    while (curr != nullptr && curr != base) {
+        parts.push_back(curr->get_name());
+        curr = curr->get_parent();
+    }
+    std::string rel = "";
+    for (int i = static_cast<int>(parts.size()) - 1; i >= 0; --i) {
+        if (!rel.empty())
+            rel += "/";
+        rel += parts[i];
+    }
+    if (!file_name.empty()) {
+        if (!rel.empty())
+            rel += "/";
+        rel += file_name;
+    }
+    return rel;
+}
+
+std::vector<FileEntry> FileSystem::get_all_files_under(const Folder* base) const {
+    std::vector<FileEntry> result;
+    base->collect_files_recursive("", result);
+    std::sort(result.begin(), result.end());
+    return result;
+}
+
+const File* FileSystem::get_file_in_current(const std::string& file_name) const {
+    return current_dir->find_file_const(file_name);
 }

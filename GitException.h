@@ -2,6 +2,7 @@
 #define GIT_EXCEPTION_H
 
 #include <string>
+#include <vector>
 #include <cctype>
 
 class GitException {
@@ -11,6 +12,29 @@ public:
 
 private:
     std::string message;
+};
+
+class FileEntry {
+public:
+    FileEntry() {}
+    FileEntry(const std::string& p, const std::vector<std::string>& l)
+        : path(p), lines(l) {}
+
+    const std::string& get_path() const { return path; }
+    const std::vector<std::string>& get_lines() const { return lines; }
+    void set_lines(const std::vector<std::string>& new_lines) { lines = new_lines; }
+
+    bool operator==(const FileEntry& other) const {
+        return path == other.path && lines == other.lines;
+    }
+
+    bool operator<(const FileEntry& other) const {
+        return path < other.path;
+    }
+
+private:
+    std::string path;
+    std::vector<std::string> lines;
 };
 
 inline bool is_valid_identifier(const std::string& name) {
