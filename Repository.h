@@ -77,6 +77,9 @@ public:
     void commit(const FileSystem& fs, const std::string& message);
     void status(const FileSystem& fs) const;
     void log() const;
+    void branch_list() const;
+    void branch_create(const std::string& branch_name);
+    void branch_delete(const std::string& branch_name);
 
 private:
     Folder* repo_root;

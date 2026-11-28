@@ -352,6 +352,42 @@ void Repository::log() const {
     }
 }
 
+// --- Branching & Phase 2 ---
+
+void Repository::branch_list() const {
+    std::vector<Branch> sorted_branches = branches;
+    std::sort(sorted_branches.begin(), sorted_branches.end());
+
+    for (size_t i = 0; i < sorted_branches.size(); ++i) {
+        if (!is_detached && sorted_branches[i].get_name() == current_branch)
+            std::cout << "* " << sorted_branches[i].get_name() << '\n';
+        else
+            std::cout << "  " << sorted_branches[i].get_name() << '\n';
+    }
+}
+
+void Repository::branch_create(const std::string& branch_name) {
+    int hid = get_head_commit_id();
+    if (hid == -1)
+        throw GitException("fatal: not a valid object name: 'HEAD' (no commits yet)");
+
+    if (!is_valid_identifier(branch_name))
+        throw GitException("fatal: '" + branch_name + "' is not a valid branch name");
+
+    if (find_branch_index(branch_name) != -1)
+        throw GitException("fatal: a branch named '" + branch_name + "' already exists");
+
+    branches.push_back(Branch(branch_name, hid));
+}
+
+void Repository::branch_delete(const std::string& branch_name) {
+    int idx = find_branch_index(branch_name);
+    if (idx == -1)
+        throw GitException("error: branch '" + branch_name + "' not found");
+
+    branches.erase(branches.begin() + idx);
+}
+
 // --- RepoManager ---
 
 RepoManager::RepoManager() {}
