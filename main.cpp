@@ -4,6 +4,7 @@
 #include <cctype>
 #include "GitException.h"
 #include "FileSystem.h"
+#include "Repository.h"
 
 std::string trim_spaces(const std::string& s) {
     size_t start = 0;
@@ -15,7 +16,19 @@ std::string trim_spaces(const std::string& s) {
     return s.substr(start, end - start);
 }
 
-void process_command(const std::string& line, FileSystem& fs, bool& running) {
+std::string parse_config_value(const std::string& raw) {
+    std::string s = trim_spaces(raw);
+    if (s.size() >= 2 && s.front() == '"' && s.back() == '"')
+        return s.substr(1, s.size() - 2);
+    if (!s.empty() && s.find(' ') == std::string::npos && s.find('"') == std::string::npos)
+        return s;
+    throw GitException("Invalid quoted string argument");
+}
+
+void process_command(const std::string& line,
+                     FileSystem& fs,
+                     RepoManager& repo_manager,
+                     bool& running) {
     std::string trimmed = trim_spaces(line);
     if (trimmed.empty())
         return;
@@ -55,7 +68,7 @@ void process_command(const std::string& line, FileSystem& fs, bool& running) {
         fs.mkdir(arg);
         return;
     }
-    
+
     if (cmd == "cd") {
         std::string arg, extra;
         if (!(ss >> arg) || (ss >> extra))
@@ -64,7 +77,7 @@ void process_command(const std::string& line, FileSystem& fs, bool& running) {
         return;
     }
 
-        if (cmd == "touch") {
+    if (cmd == "touch") {
         std::string arg, extra;
         if (!(ss >> arg) || (ss >> extra))
             throw GitException("touch: invalid arguments");
@@ -121,11 +134,92 @@ void process_command(const std::string& line, FileSystem& fs, bool& running) {
         return;
     }
 
+    if (cmd == "git") {
+        std::string sub;
+        if (!(ss >> sub))
+            throw GitException("git: missing subcommand");
+
+        if (sub == "config") {
+            std::string key;
+            if (!(ss >> key))
+                throw GitException("git config: missing key");
+
+            std::string rest;
+            std::getline(ss, rest);
+            std::string val = parse_config_value(rest);
+
+            if (key == "user.name")
+                UserConfig::get_instance()->set_username(val);
+            else if (key == "user.email")
+                UserConfig::get_instance()->set_email(val);
+            else
+                throw GitException("git config: unknown key '" + key + "'");
+            return;
+        }
+
+        if (sub == "init") {
+            std::string extra;
+            if (ss >> extra)
+                throw GitException("git init: too many arguments");
+            repo_manager.init(fs);
+            return;
+        }
+
+        if (sub == "add") {
+            std::string arg, extra;
+            if (!(ss >> arg) || (ss >> extra))
+                throw GitException("git add: invalid arguments");
+            repo_manager.get_active_repo(fs)->add(fs, arg);
+            return;
+        }
+
+        if (sub == "reset") {
+            std::string arg, extra;
+            if (!(ss >> arg) || (ss >> extra))
+                throw GitException("git reset: invalid arguments");
+            repo_manager.get_active_repo(fs)->reset(fs, arg);
+            return;
+        }
+
+        if (sub == "commit") {
+            std::string flag;
+            if (!(ss >> flag) || flag != "-m")
+                throw GitException("git commit: expected -m \"<MESSAGE>\"");
+            std::string rest;
+            std::getline(ss, rest);
+            std::string s = trim_spaces(rest);
+            if (s.size() < 2 || s.front() != '"' || s.back() != '"')
+                throw GitException("git commit: message must be enclosed in double quotes");
+            std::string msg = s.substr(1, s.size() - 2);
+            repo_manager.get_active_repo(fs)->commit(fs, msg);
+            return;
+        }
+
+        if (sub == "status") {
+            std::string extra;
+            if (ss >> extra)
+                throw GitException("git status: too many arguments");
+            repo_manager.get_active_repo(fs)->status(fs);
+            return;
+        }
+
+        if (sub == "log") {
+            std::string extra;
+            if (ss >> extra)
+                throw GitException("git log: too many arguments");
+            repo_manager.get_active_repo(fs)->log();
+            return;
+        }
+
+        throw GitException("git: '" + sub + "' is not a git command");
+    }
+
     throw GitException("Unknown command: " + cmd);
 }
 
 int main() {
     FileSystem fs;
+    RepoManager repo_manager;
     bool running = true;
     std::string line;
 
@@ -135,7 +229,7 @@ int main() {
             break;
 
         try {
-            process_command(line, fs, running);
+            process_command(line, fs, repo_manager, running);
         } catch (const GitException& e) {
             std::cout << e.what() << '\n';
         }
