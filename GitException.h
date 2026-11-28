@@ -50,4 +50,14 @@ inline bool is_valid_identifier(const std::string& name) {
     return true;
 }
 
+inline bool is_all_digits(const std::string& s) {
+    if (s.empty())
+        return false;
+    for (size_t i = 0; i < s.size(); ++i) {
+        if (!std::isdigit(static_cast<unsigned char>(s[i])))
+            return false;
+    }
+    return true;
+}
+
 #endif

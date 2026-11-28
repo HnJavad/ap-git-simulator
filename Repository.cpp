@@ -371,7 +371,7 @@ void Repository::branch_create(const std::string& branch_name) {
     if (hid == -1)
         throw GitException("fatal: not a valid object name: 'HEAD' (no commits yet)");
 
-    if (!is_valid_identifier(branch_name))
+    if (!is_valid_identifier(branch_name) || is_all_digits(branch_name))
         throw GitException("fatal: '" + branch_name + "' is not a valid branch name");
 
     if (find_branch_index(branch_name) != -1)
@@ -384,6 +384,9 @@ void Repository::branch_delete(const std::string& branch_name) {
     int idx = find_branch_index(branch_name);
     if (idx == -1)
         throw GitException("error: branch '" + branch_name + "' not found");
+
+    if (!is_detached && current_branch == branch_name)
+        throw GitException("error: cannot delete branch '" + branch_name + "' checked out at HEAD");
 
     branches.erase(branches.begin() + idx);
 }
